@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rubedo — Multi-Strategy Alchemy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: #8a6d2b;
+    --gold-bright: #e8d48b;
+    --crimson: #8b1a1a;
+    --deep-black: #0a0a0c;
+    --parchment: #f0e6d3;
+    --ink: #1a1612;
+    --sulfur: #b8860b;
+    --mercury: #7b8d8e;
+    --salt: #d4c5a9;
+    --node-bg: rgba(12, 10, 8, 0.92);
+    --line-color: rgba(201, 168, 76, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep-black);
+    color: var(--parchment);
+    font-family: 'EB Garamond', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(139, 26, 26, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 30%, rgba(201, 168, 76, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(123, 141, 142, 0.05) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .header .sigil {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 12px;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.2s forwards;
+  }
+
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(24px, 5vw, 44px);
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-shadow: 0 0 40px rgba(201, 168, 76, 0.2);
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.4s forwards;
+  }
+
+  .header .subtitle {
+    font-style: italic;
+    font-size: 16px;
+    color: var(--salt);
+    margin-top: 8px;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.6s forwards;
+  }
+
+  .header .divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    margin: 20px auto 0;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.8s forwards;
+  }
+
+  .instruction {
+    text-align: center;
+    font-size: 12px;
+    color: var(--mercury);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 1s forwards;
+  }
+
+  .tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .node {
+    position: relative;
+    text-align: center;
+    padding: 18px 36px;
+    border: 1px solid var(--gold-dim);
+    background: var(--node-bg);
+    cursor: pointer;
+    transition: all 0.35s ease;
+    opacity: 0;
+    z-index: 2;
+  }
+
+  .node:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 30px rgba(201, 168, 76, 0.1);
+  }
+
+  .node .magic-word {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .node .incantation {
+    font-size: 14px;
+    color: var(--salt);
+    font-style: italic;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .node .expansion {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.6s ease, opacity 0.4s ease, margin 0.4s ease;
+    opacity: 0;
+    font-size: 13px;
+    color: var(--parchment);
+    line-height: 1.7;
+    text-align: left;
+    margin-top: 0;
+  }
+
+  .node.expanded .expansion {
+    max-height: 400px;
+    opacity: 1;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(201, 168, 76, 0.15);
+  }
+
+  .node .expand-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 1px;
+    margin-top: 6px;
+    transition: opacity 0.3s;
+  }
+
+  .node.expanded .expand-hint { opacity: 0; height: 0; margin: 0; }
+
+  .root {
+    padding: 22px 52px;
+    border-width: 1.5px;
+    border-color: var(--gold);
+    cursor: default;
+  }
+
+  .root .magic-word { font-size: 18px; }
+
+  .trunk {
+    width: 1px;
+    height: 36px;
+    background: var(--line-color);
+    opacity: 0;
+  }
+
+  .hyperworker {
+    width: 100%;
+    max-width: 950px;
+    border: 1px dashed var(--mercury);
+    background: rgba(123, 141, 142, 0.04);
+    padding: 16px 28px;
+  }
+
+  .hyperworker .magic-word {
+    color: var(--mercury);
+    font-size: 12px;
+    letter-spacing: 3px;
+  }
+
+  .hyperworker:hover .magic-word { color: var(--gold-dim); }
+  .hyperworker .incantation { color: var(--mercury); font-size: 13px; }
+
+  .observer-zone {
+    position: relative;
+    width: 100%;
+    max-width: 950px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .observer-arrows {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 0 60px;
+    height: 30px;
+    opacity: 0;
+  }
+
+  .observer-arrows .arrow-down {
+    width: 1px;
+    height: 100%;
+    background: repeating-linear-gradient(to bottom, var(--mercury) 0px, var(--mercury) 3px, transparent 3px, transparent 7px);
+    opacity: 0.35;
+    position: relative;
+  }
+
+  .observer-arrows .arrow-down::after {
+    content: '▾';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--mercury);
+    font-size: 8px;
+    opacity: 0.5;
+  }
+
+  .branch-spread {
+    position: relative;
+    width: 100%;
+    max-width: 950px;
+    height: 30px;
+    opacity: 0;
+  }
+
+  .branch-spread svg { width: 100%; height: 100%; }
+
+  .strategies {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 950px;
+  }
+
+  .strategy-node {
+    width: 100%;
+    padding: 16px 14px;
+    text-align: center;
+  }
+
+  .strategy-node .magic-word { font-size: 13px; }
+  .strategy-node .incantation { font-size: 12px; }
+
+  .num {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 20px;
+    height: 20px;
+    background: var(--deep-black);
+    border: 1px solid var(--gold-dim);
+    border-radius: 50%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--gold-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes nodeAppear {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .anim-1 { animation: nodeAppear 0.5s ease 1.2s forwards; }
+  .anim-2 { animation: fadeIn 0.4s ease 1.5s forwards; }
+  .anim-3 { animation: nodeAppear 0.5s ease 1.7s forwards; }
+  .anim-4 { animation: fadeIn 0.4s ease 2.0s forwards; }
+  .anim-5 { animation: fadeIn 0.4s ease 2.1s forwards; }
+  .anim-6 { animation: nodeAppear 0.5s ease 2.3s forwards; }
+  .anim-7 { animation: nodeAppear 0.5s ease 2.4s forwards; }
+  .anim-8 { animation: nodeAppear 0.5s ease 2.5s forwards; }
+  .anim-9 { animation: nodeAppear 0.5s ease 2.6s forwards; }
+
+  .legend {
+    margin-top: 50px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--mercury);
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 3s forwards;
+  }
+
+  .legend span { margin: 0 12px; }
+
+  .legend .dash {
+    display: inline-block;
+    width: 20px;
+    border-top: 1px dashed var(--mercury);
+    vertical-align: middle;
+    margin-right: 4px;
+    opacity: 0.5;
+  }
+
+  .legend .solid {
+    display: inline-block;
+    width: 20px;
+    border-top: 1px solid var(--gold-dim);
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  .hero-image {
+    text-align: center;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeIn 1.2s ease 0.1s forwards;
+  }
+
+  .hero-image img {
+    max-width: 320px;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow:
+      0 0 60px rgba(139, 26, 26, 0.3),
+      0 0 120px rgba(201, 168, 76, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    .strategies {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      max-width: 400px;
+    }
+    .branch-spread { display: none; }
+    .observer-arrows { display: none; }
+    .hyperworker { max-width: 400px; }
+    .node { padding: 14px 18px; }
+    .hero-image img { max-width: 240px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="hero-image">
+    <img src="Strate-gem.png" alt="The Philosopher's Stone">
+  </div>
+
+  <div class="header">
+    <div class="sigil">Rubedo Capital</div>
+    <h1>Magic Words of Alchemy</h1>
+    <div class="subtitle">Multi-Strategy Construction Methodology</div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="instruction">tap each node to reveal the deeper incantation</div>
+
+  <div class="tree">
+
+    <div class="node root anim-1">
+      <div class="magic-word">Opus Magnum</div>
+      <div class="incantation">Four transmutations, one philosopher's stone</div>
+    </div>
+
+    <div class="trunk anim-2"></div>
+
+    <div class="observer-zone">
+      <div class="node hyperworker anim-3" onclick="toggleNode(this)">
+        <div class="magic-word">⟐ Hyperworker — The Observer ⟐</div>
+        <div class="incantation">Regime-aware overseer — observation alters the system</div>
+        <div class="expand-hint">[ tap to reveal ]</div>
+        <div class="expansion">
+          The Hyperworker sits above all four strategies as a <strong>regime-detection engine</strong>.
+          It fuses two signal classes:<br><br>
+          <strong>Micro detectors</strong> — cross-asset momentum, liquidity conditions, order flow — the fast-twitch
+          fibers that sense shifts before they show in price.<br><br>
+          <strong>Macro flow</strong> — news flow, sentiment, rates, yields, positioning data — the slow
+          structural currents that define the prevailing regime.<br><br>
+          Together they form a <em>detecting machine</em> for regime changes. When conditions shift,
+          the Hyperworker emits a signal — a click, an impulse, a whistle — that the train is
+          switching tracks and the system is about to move in a completely different direction.
+          Each strategy interprets this signal within its own framework: Stat Arb reprices its
+          spread models, Factor Investing rotates its loadings, Trend Following resets its
+          change point priors, Macro reshapes its optimization surface. Same whistle, four
+          different responses.
+        </div>
+      </div>
+
+      <div class="observer-arrows anim-4">
+        <div class="arrow-down"></div>
+        <div class="arrow-down"></div>
+        <div class="arrow-down"></div>
+        <div class="arrow-down"></div>
+      </div>
+    </div>
+
+    <div class="branch-spread anim-5">
+      <svg viewBox="0 0 950 30" preserveAspectRatio="none">
+        <line x1="475" y1="0" x2="475" y2="8" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="118" y1="8" x2="832" y2="8" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="118" y1="8" x2="118" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="356" y1="8" x2="356" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="594" y1="8" x2="594" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="832" y1="8" x2="832" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <div class="strategies">
+
+      <div class="node strategy-node anim-6" onclick="toggleNode(this)">
+        <div class="num">I</div>
+        <div class="magic-word">Stat Arb / Pairs</div>
+        <div class="incantation">Explaining &amp; exploiting capital flows</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Pairs trading and statistical arbitrage grounded in the mechanics of
+          <strong>capital flows</strong> — not mere correlation. The first-level magic word
+          is the <em>why</em> behind co-movement: sector rotation, index rebalancing,
+          fund flows, and liquidity-driven dislocations. Cointegration is the symptom;
+          capital flow is the cause.
+        </div>
+      </div>
+
+      <div class="node strategy-node anim-7" onclick="toggleNode(this)">
+        <div class="num">II</div>
+        <div class="magic-word">Factor Investing</div>
+        <div class="incantation">Embracing complexity</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Beyond the canonical factor zoo — <strong>embracing complexity</strong> means
+          accepting that factor premia are nonlinear, time-varying, and interact in ways
+          linear models cannot capture. Covariance denoising (RMT / Marchenko-Pastur),
+          robust PCA, and deep factor models replace the classical Fama-French decomposition.
+          Complexity is not the enemy; oversimplification is.
+        </div>
+      </div>
+
+      <div class="node strategy-node anim-8" onclick="toggleNode(this)">
+        <div class="num">III</div>
+        <div class="magic-word">Trend Following</div>
+        <div class="incantation">Change point dynamics</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Classical trend following reimagined through <strong>change point detection</strong>.
+          Rather than fixed lookback windows and moving average crossovers, the magic word is
+          identifying structural breaks — inflection points where the generating process shifts.
+          Bayesian online change point detection, Hurst exponent estimation, and hidden Markov
+          models replace the blunt instruments of CTA lore.
+        </div>
+      </div>
+
+      <div class="node strategy-node anim-9" onclick="toggleNode(this)">
+        <div class="num">IV</div>
+        <div class="magic-word">Macro</div>
+        <div class="incantation">Conditional portfolio optimization</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Macro allocation driven by <strong>conditional portfolio optimization</strong> —
+          expected returns, covariances, and constraints are all regime-dependent.
+          The optimization surface reshapes itself based on the Hyperworker's regime
+          classification. No single efficient frontier; rather a manifold of frontiers
+          indexed by the prevailing macro state.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span><span class="solid"></span> strategy hierarchy</span>
+    <span><span class="dash"></span> hyperworker observation</span>
+  </div>
+
+</div>
+
+<script>
+function toggleNode(el) {
+  el.classList.toggle('expanded');
+}
+</script>
+
+</body>
+</html>
