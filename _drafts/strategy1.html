@@ -348,6 +348,23 @@
     margin-right: 4px;
   }
 
+  .hero-image {
+    text-align: center;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeIn 1.2s ease 0.1s forwards;
+  }
+
+  .hero-image img {
+    max-width: 320px;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow:
+      0 0 60px rgba(139, 26, 26, 0.3),
+      0 0 120px rgba(201, 168, 76, 0.1);
+  }
+
   @media (max-width: 768px) {
     .strategies {
       grid-template-columns: 1fr;
@@ -358,12 +375,17 @@
     .observer-arrows { display: none; }
     .hyperworker { max-width: 400px; }
     .node { padding: 14px 18px; }
+    .hero-image img { max-width: 240px; }
   }
 </style>
 </head>
 <body>
 
 <div class="container">
+
+  <div class="hero-image">
+    <img src="Strate-gem.png" alt="The Philosopher's Stone">
+  </div>
 
   <div class="header">
     <div class="sigil">Rubedo Capital</div>
