@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rubedo — Multi-Strategy Alchemy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: #8a6d2b;
+    --gold-bright: #e8d48b;
+    --crimson: #8b1a1a;
+    --crimson-glow: rgba(139, 26, 26, 0.4);
+    --deep-black: #0a0a0c;
+    --parchment: #f0e6d3;
+    --ink: #1a1612;
+    --sulfur: #b8860b;
+    --mercury: #7b8d8e;
+    --mercury-bright: #a3b5b6;
+    --salt: #d4c5a9;
+    --node-bg: rgba(12, 10, 8, 0.92);
+    --line-color: rgba(201, 168, 76, 0.3);
+    --pai-color: #c49b6c;
+    --pai-glow: rgba(196, 155, 108, 0.15);
+    --phi-color: #e8d48b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep-black);
+    color: var(--parchment);
+    font-family: 'EB Garamond', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(139, 26, 26, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 30%, rgba(201, 168, 76, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(123, 141, 142, 0.05) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* ── Header ─────────────────────────── */
+
+  .header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .header .sigil {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 12px;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.2s forwards;
+  }
+
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(24px, 5vw, 44px);
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-shadow: 0 0 40px rgba(201, 168, 76, 0.2);
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.4s forwards;
+  }
+
+  .header .subtitle {
+    font-style: italic;
+    font-size: 16px;
+    color: var(--salt);
+    margin-top: 8px;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.6s forwards;
+  }
+
+  .header .divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    margin: 20px auto 0;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 0.8s forwards;
+  }
+
+  .instruction {
+    text-align: center;
+    font-size: 12px;
+    color: var(--mercury);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeDown 0.8s ease 1s forwards;
+  }
+
+  /* ── Tree structure ────────────────── */
+
+  .tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .node {
+    position: relative;
+    text-align: center;
+    padding: 18px 36px;
+    border: 1px solid var(--gold-dim);
+    background: var(--node-bg);
+    cursor: pointer;
+    transition: all 0.35s ease;
+    opacity: 0;
+    z-index: 2;
+  }
+
+  .node:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 30px rgba(201, 168, 76, 0.1);
+  }
+
+  .node .magic-word {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .node .incantation {
+    font-size: 14px;
+    color: var(--salt);
+    font-style: italic;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .node .expansion {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.7s ease, opacity 0.4s ease, margin 0.4s ease;
+    opacity: 0;
+    font-size: 13px;
+    color: var(--parchment);
+    line-height: 1.7;
+    text-align: left;
+    margin-top: 0;
+  }
+
+  .node.expanded .expansion {
+    max-height: 620px;
+    opacity: 1;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(201, 168, 76, 0.15);
+  }
+
+  .node .expand-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 1px;
+    margin-top: 6px;
+    transition: opacity 0.3s;
+  }
+
+  .node.expanded .expand-hint { opacity: 0; height: 0; margin: 0; }
+
+  /* ── Root: Opus Magnum ─────────────── */
+
+  .root {
+    padding: 22px 52px;
+    border-width: 1.5px;
+    border-color: var(--gold);
+    cursor: default;
+  }
+
+  .root .magic-word { font-size: 18px; }
+
+  .trunk {
+    width: 1px;
+    height: 36px;
+    background: var(--line-color);
+    opacity: 0;
+  }
+
+  /* ── Pervasive Adaptive Inference layer ─ */
+
+  .pai-zone {
+    position: relative;
+    width: 100%;
+    max-width: 950px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pai {
+    width: 100%;
+    max-width: 950px;
+    border: 1px solid var(--pai-color);
+    background: linear-gradient(180deg, rgba(196, 155, 108, 0.05) 0%, rgba(196, 155, 108, 0.02) 100%);
+    padding: 20px 32px;
+    position: relative;
+  }
+
+  .pai::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    border: 1px solid transparent;
+    background: linear-gradient(180deg, var(--pai-color), transparent) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.3;
+  }
+
+  .pai:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 40px var(--pai-glow);
+  }
+
+  .pai .magic-word {
+    color: var(--pai-color);
+    font-size: 13px;
+    letter-spacing: 3px;
+  }
+
+  .pai .pai-acronym {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 4px;
+    margin-top: 2px;
+  }
+
+  .pai .incantation { color: var(--salt); font-size: 14px; }
+
+  .pai-zone .observer-arrows {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 0 60px;
+    height: 32px;
+    opacity: 0;
+  }
+
+  .observer-arrows .arrow-down {
+    width: 1px;
+    height: 100%;
+    background: repeating-linear-gradient(to bottom, var(--pai-color) 0px, var(--pai-color) 3px, transparent 3px, transparent 7px);
+    opacity: 0.45;
+    position: relative;
+  }
+
+  .observer-arrows .arrow-down::after {
+    content: '▾';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--pai-color);
+    font-size: 8px;
+    opacity: 0.6;
+  }
+
+  /* ── Branch spread ─────────────────── */
+
+  .branch-spread {
+    position: relative;
+    width: 100%;
+    max-width: 950px;
+    height: 30px;
+    opacity: 0;
+  }
+
+  .branch-spread svg { width: 100%; height: 100%; }
+
+  /* ── Strategy grid ─────────────────── */
+
+  .strategies {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 950px;
+  }
+
+  .strategy-node {
+    width: 100%;
+    padding: 16px 14px;
+    text-align: center;
+  }
+
+  .strategy-node .magic-word { font-size: 13px; }
+  .strategy-node .incantation { font-size: 12px; line-height: 1.4; }
+
+  .strategy-node .framework-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--mercury);
+    letter-spacing: 2px;
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  /* Skew glyphs */
+  .skew-glyph {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 22px;
+  }
+
+  .skew-glyph svg {
+    width: 60px;
+    height: 22px;
+  }
+
+  .skew-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--gold-dim);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .num {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 20px;
+    height: 20px;
+    background: var(--deep-black);
+    border: 1px solid var(--gold-dim);
+    border-radius: 50%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--gold-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Phi badge on strategies that consume Phi */
+  .phi-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--deep-black);
+    border: 1px solid var(--phi-color);
+    border-radius: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--phi-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+  }
+
+  .phi-badge.selective {
+    border-style: dashed;
+    opacity: 0.75;
+  }
+
+  /* ── Convergence trunk to Tail Risk Parity ─ */
+
+  .converge-spread {
+    position: relative;
+    width: 100%;
+    max-width: 950px;
+    height: 36px;
+    opacity: 0;
+    margin-top: 4px;
+  }
+
+  .converge-spread svg { width: 100%; height: 100%; }
+
+  /* ── Tail Risk Parity terminal node ─── */
+
+  .trp {
+    width: 100%;
+    max-width: 720px;
+    border: 1.5px solid var(--crimson);
+    background: linear-gradient(180deg, rgba(139, 26, 26, 0.08) 0%, rgba(12, 10, 8, 0.95) 100%);
+    padding: 22px 42px;
+    position: relative;
+    opacity: 0;
+  }
+
+  .trp::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 1px solid var(--crimson);
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
+  .trp:hover {
+    box-shadow: 0 0 50px var(--crimson-glow);
+  }
+
+  .trp .magic-word {
+    color: var(--gold-bright);
+    font-size: 15px;
+    letter-spacing: 3px;
+  }
+
+  .trp .incantation {
+    color: var(--salt);
+  }
+
+  /* ── Animations ────────────────────── */
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes nodeAppear {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .anim-1 { animation: nodeAppear 0.5s ease 1.2s forwards; }
+  .anim-2 { animation: fadeIn 0.4s ease 1.5s forwards; }
+  .anim-3 { animation: nodeAppear 0.5s ease 1.7s forwards; }
+  .anim-4 { animation: fadeIn 0.4s ease 2.0s forwards; }
+  .anim-5 { animation: fadeIn 0.4s ease 2.1s forwards; }
+  .anim-6 { animation: nodeAppear 0.5s ease 2.3s forwards; }
+  .anim-7 { animation: nodeAppear 0.5s ease 2.4s forwards; }
+  .anim-8 { animation: nodeAppear 0.5s ease 2.5s forwards; }
+  .anim-9 { animation: nodeAppear 0.5s ease 2.6s forwards; }
+  .anim-10 { animation: fadeIn 0.5s ease 2.9s forwards; }
+  .anim-11 { animation: nodeAppear 0.6s ease 3.1s forwards; }
+
+  /* ── Legend ────────────────────────── */
+
+  .legend {
+    margin-top: 50px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--mercury);
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 3.5s forwards;
+    line-height: 2;
+  }
+
+  .legend span { margin: 0 10px; white-space: nowrap; }
+
+  .legend .dash {
+    display: inline-block;
+    width: 20px;
+    border-top: 1px dashed var(--pai-color);
+    vertical-align: middle;
+    margin-right: 4px;
+    opacity: 0.6;
+  }
+
+  .legend .solid {
+    display: inline-block;
+    width: 20px;
+    border-top: 1px solid var(--gold-dim);
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  .legend .crimson-line {
+    display: inline-block;
+    width: 20px;
+    border-top: 1px solid var(--crimson);
+    vertical-align: middle;
+    margin-right: 4px;
+    opacity: 0.7;
+  }
+
+  .legend .phi-inline {
+    font-family: 'Cinzel', serif;
+    color: var(--phi-color);
+    font-weight: 700;
+    font-size: 12px;
+    margin-right: 4px;
+  }
+
+  /* ── Hero image ────────────────────── */
+
+  .hero-image {
+    text-align: center;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeIn 1.2s ease 0.1s forwards;
+  }
+
+  .hero-image img {
+    max-width: 320px;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow:
+      0 0 60px rgba(139, 26, 26, 0.3),
+      0 0 120px rgba(201, 168, 76, 0.1);
+  }
+
+  /* ── Expansion content styling ─────── */
+
+  .expansion strong {
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
+
+  .expansion em {
+    color: var(--mercury-bright);
+  }
+
+  .expansion .phi-ref {
+    font-family: 'Cinzel', serif;
+    color: var(--phi-color);
+    font-weight: 700;
+    font-style: normal;
+  }
+
+  .expansion .tech-aside {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-left: 2px solid var(--gold-dim);
+    background: rgba(201, 168, 76, 0.04);
+    font-size: 12px;
+    color: var(--salt);
+  }
+
+  .expansion .tech-aside::before {
+    content: 'TECHNICAL';
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--gold-dim);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  /* ── Responsive ────────────────────── */
+
+  @media (max-width: 768px) {
+    .strategies {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      max-width: 400px;
+    }
+    .branch-spread { display: none; }
+    .converge-spread { display: none; }
+    .pai-zone .observer-arrows { display: none; }
+    .pai { max-width: 400px; }
+    .trp { max-width: 400px; padding: 18px 24px; }
+    .node { padding: 14px 18px; }
+    .hero-image img { max-width: 240px; }
+    .node.expanded .expansion { max-height: 900px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="hero-image">
+    <img src="Strate-gem.png" alt="The Philosopher's Stone">
+  </div>
+
+  <div class="header">
+    <div class="sigil">Rubedo Capital</div>
+    <h1>Magic Words of Alchemy</h1>
+    <div class="subtitle">Multi-Strategy Construction Methodology</div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="instruction">tap each node to reveal the deeper incantation</div>
+
+  <div class="tree">
+
+    <!-- ─── Root: Opus Magnum ─────────────────── -->
+    <div class="node root anim-1">
+      <div class="magic-word">Opus Magnum</div>
+      <div class="incantation">Four transmutations, one philosopher's stone</div>
+    </div>
+
+    <div class="trunk anim-2"></div>
+
+    <!-- ─── Pervasive Adaptive Inference ──────── -->
+    <div class="pai-zone">
+      <div class="node pai anim-3" onclick="toggleNode(this)">
+        <div class="magic-word">⟐ Pervasive Adaptive Inference ⟐</div>
+        <div class="pai-acronym">— P · A · I —</div>
+        <div class="incantation">The stack that rewrites itself as the world rewrites itself</div>
+        <div class="expand-hint">[ tap to reveal ]</div>
+        <div class="expansion">
+          Pervasive Adaptive Inference is Rubedo's philosophical commitment and the
+          defining property of an AI-native stack: <strong>every model in the system
+          continuously re-parameterizes itself conditional on evolving conditions</strong>.
+          Not a single regime detector handing signals downstream — rather a principle
+          running through every layer.
+          <br><br>
+          <em>Factor loadings</em> re-weighted as cross-sectional structure shifts.
+          <em>Sparse dynamical systems</em> refit as market equations of motion evolve.
+          <em>Eigenspectra</em> re-estimated as temporal dynamics rotate.
+          <em>Optimization surfaces</em> reshaped as regimes cycle.
+          <em>Copulas, priors, feature transforms, even loss functions</em> — all
+          continuously updated, not as scheduled retraining but as the ongoing
+          operation of the system.
+          <br><br>
+          Every strategy interprets the world through this principle, in its own
+          mathematical language: Stat Arb re-identifies cross-sectional dynamical
+          structure; Factor Investing rotates its conditional forecasts; Trend
+          Following retunes its change-point machinery; Macro reshapes its
+          optimization surface. Same philosophy, four distinct mathematical
+          incarnations.
+          <div class="tech-aside">
+            PAI is not a single module. It is the pervasive property of a stack
+            where learning, calibration, and inference happen at every level
+            continuously. What distinguishes PAI from ordinary retraining is
+            the <em>coupling</em> — how updates at one level shape priors at
+            another — and the <em>meta-learning</em> governing which
+            parameters respond fast and which respond slow. This coupling is
+            the firm's intellectual property.
+          </div>
+        </div>
+      </div>
+
+      <div class="observer-arrows anim-4">
+        <div class="arrow-down"></div>
+        <div class="arrow-down"></div>
+        <div class="arrow-down"></div>
+        <div class="arrow-down"></div>
+      </div>
+    </div>
+
+    <div class="branch-spread anim-5">
+      <svg viewBox="0 0 950 30" preserveAspectRatio="none">
+        <line x1="475" y1="0" x2="475" y2="8" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="118" y1="8" x2="832" y2="8" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="118" y1="8" x2="118" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="356" y1="8" x2="356" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="594" y1="8" x2="594" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+        <line x1="832" y1="8" x2="832" y2="30" stroke="rgba(201,168,76,0.3)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- ─── Four Strategies ───────────────────── -->
+    <div class="strategies">
+
+      <!-- Stat Arb -->
+      <div class="node strategy-node anim-6" onclick="toggleNode(this)">
+        <div class="num">I</div>
+        <div class="phi-badge selective" title="Selective Φ integration">Φ</div>
+        <div class="magic-word">Stat Arb</div>
+        <div class="incantation">Patterns beneath the surface</div>
+        <div class="framework-tag">SINDy · LLM · Physics</div>
+        <div class="skew-glyph">
+          <svg viewBox="0 0 60 22">
+            <path d="M 2,20 Q 10,20 14,18 Q 20,14 26,6 Q 32,4 40,8 Q 50,18 58,20" fill="none" stroke="#c9a84c" stroke-width="1.2"/>
+            <line x1="2" y1="20" x2="58" y2="20" stroke="#8a6d2b" stroke-width="0.5" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="skew-label">ε &lt; 0 · ν small</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Stat Arb is Rubedo's <strong>open research frontier</strong> — pattern-based
+          alpha that refuses to fit in the factor taxonomy. Where other firms trade
+          pairs, Rubedo trades <em>implicit dynamical peer groups</em> discovered
+          directly from the data.
+          <br><br>
+          <strong>SINDy</strong> — sparse identification of the market's own equations
+          of motion across the cross-section. Stocks sharing dynamical modes form peer
+          groups no industry code could reveal. Residuals from fitted dynamics become
+          tradeable signal.
+          <br><br>
+          <strong>LLM-derived peer groups</strong> — language-model analysis of
+          earnings calls and business-process language constructs a second peer
+          geometry. Where SINDy and LLM agree, the conviction is highest; where
+          they disagree, the disagreement itself is informative.
+          <br><br>
+          <strong>Mathematical physics</strong> — turbulence measures, damped-driven
+          oscillator fits to intraday spreads, wave mechanics applied to order flow.
+          The parameters are the signal, not the prices.
+          <br><br>
+          Classical capital-flow cointegration remains as a baseline. But Stat Arb at
+          Rubedo is intentionally unbounded — the strategy bucket where novel
+          structural alpha is discovered.
+          <div class="tech-aside">
+            <span class="phi-ref">Φ</span> participates here as the <em>statistical
+            yardstick</em> for residual significance. Financial residuals are
+            fat-tailed and skewed; Φ's (ν, ε) heads provide the likelihood under
+            which SINDy anomalies are evaluated as tradeable versus within normal
+            tail behavior.
+          </div>
+        </div>
+      </div>
+
+      <!-- Factor Investing -->
+      <div class="node strategy-node anim-7" onclick="toggleNode(this)">
+        <div class="num">II</div>
+        <div class="phi-badge" title="Primary Φ consumer">Φ</div>
+        <div class="magic-word">Factor Investing</div>
+        <div class="incantation">The four-moment forecast</div>
+        <div class="framework-tag">Φ · Four Heads</div>
+        <div class="skew-glyph">
+          <svg viewBox="0 0 60 22">
+            <path d="M 2,20 Q 12,18 20,10 Q 30,2 40,10 Q 48,18 58,20" fill="none" stroke="#c9a84c" stroke-width="1.2"/>
+            <line x1="2" y1="20" x2="58" y2="20" stroke="#8a6d2b" stroke-width="0.5" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="skew-label">ε ≈ 0 · ν moderate</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Factor Investing at Rubedo is not a linear factor decomposition. It is
+          <strong>Φ</strong> — a deep conditional forecaster that emits, per stock
+          per period, the full four-moment distribution of expected returns:
+          <strong>mean (μ), volatility (σ), skewness (ε), tail-weight (ν)</strong>.
+          <br><br>
+          Four heads sharing a trunk. Each head routed distinct features — options
+          skew feeds ε and ν; quality feeds μ and ν; valuation feeds long-horizon
+          μ; analyst revisions feed short-horizon μ. <em>Embracing complexity</em>
+          means routing features to where they carry signal, not stuffing them into
+          a single linear regression.
+          <br><br>
+          Nonlinear factor structure. Time-varying loadings implicit in regime
+          conditioning. Covariance denoising via RMT. Tail dependence captured by
+          Student-t factor copulas. The "factor zoo" dissolves into a coordinated
+          multi-head model with a single likelihood.
+          <br><br>
+          Where classical factor investing emits an expected-return vector, <span
+          class="phi-ref">Φ</span> emits a distribution. Where classical factor
+          investing relies on a separately estimated covariance, <span
+          class="phi-ref">Φ</span> provides the marginals from which a coherent
+          joint distribution is built.
+          <div class="tech-aside">
+            <span class="phi-ref">Φ</span>'s likelihood is the sinh-arcsinh-skewed
+            Student-t. Training is Bayesian — MCMC or approximate posterior
+            inference on a deep network emitting four clock-invariant,
+            economically meaningful parameters. This is where the bulk of
+            Rubedo's per-stock quantitative research concentrates.
+          </div>
+        </div>
+      </div>
+
+      <!-- Trend Following -->
+      <div class="node strategy-node anim-8" onclick="toggleNode(this)">
+        <div class="num">III</div>
+        <div class="magic-word">Trend Following</div>
+        <div class="incantation">Spectral change-point dynamics</div>
+        <div class="framework-tag">Koopman · EDMD</div>
+        <div class="skew-glyph">
+          <svg viewBox="0 0 60 22">
+            <path d="M 2,20 Q 8,14 18,12 Q 26,18 32,14 Q 40,6 50,20 Q 54,20 58,20" fill="none" stroke="#c9a84c" stroke-width="1.2"/>
+            <line x1="2" y1="20" x2="58" y2="20" stroke="#8a6d2b" stroke-width="0.5" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="skew-label">ε &gt; 0 · ν small</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Classical trend following lives on moving averages and fixed lookback
+          windows — blunt instruments that neither know when a trend begins nor
+          when one ends. Rubedo replaces them with the <strong>Koopman operator</strong>.
+          <br><br>
+          The Koopman framework lifts nonlinear market dynamics into a linear
+          operator acting on observables. Its eigendecomposition reveals the
+          market's <em>natural coordinates</em> — persistent modes, characteristic
+          time scales, the slow structural currents. Trends are eigenfunctions
+          with eigenvalues near unity and growing amplitude. Change points are
+          <strong>discontinuities in the eigenspectrum</strong>.
+          <br><br>
+          No prior hazard rate. No fixed number of hidden states. The spectrum
+          reveals its own structure; regime transitions emerge as spectral
+          bifurcations. Positions align with dominant Koopman modes, scaled by
+          eigenvalue magnitude and eigenfunction amplitude.
+          <br><br>
+          Where classical CTAs detect trends after they have formed, Koopman-based
+          trend detection sees the emergence of new modes in the operator spectrum —
+          often earlier, always more structured.
+          <div class="tech-aside">
+            Trend Following does not consume <span class="phi-ref">Φ</span>. Its
+            mathematical framework operates on cross-sectional and cross-asset
+            observables through operator-theoretic methods. Candidate
+            architectural commitment under research: the Koopman operator may
+            also underlie the regime-encoding machinery, consolidating two
+            infrastructures into one spectral object.
+          </div>
+        </div>
+      </div>
+
+      <!-- Macro -->
+      <div class="node strategy-node anim-9" onclick="toggleNode(this)">
+        <div class="num">IV</div>
+        <div class="magic-word">Macro</div>
+        <div class="incantation">Conditional portfolio optimization</div>
+        <div class="framework-tag">Regime-Conditional</div>
+        <div class="skew-glyph">
+          <svg viewBox="0 0 60 22">
+            <path d="M 2,20 Q 8,16 14,10 Q 22,4 30,8 Q 38,12 46,6 Q 52,14 58,20" fill="none" stroke="#c9a84c" stroke-width="1.2" opacity="0.6"/>
+            <path d="M 2,20 Q 10,12 18,8 Q 28,14 30,10 Q 36,4 46,12 Q 52,18 58,20" fill="none" stroke="#c9a84c" stroke-width="1.2" opacity="0.6" stroke-dasharray="2,2"/>
+            <line x1="2" y1="20" x2="58" y2="20" stroke="#8a6d2b" stroke-width="0.5" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="skew-label">ε regime-dependent</div>
+        <div class="expand-hint">[ tap ]</div>
+        <div class="expansion">
+          Macro allocation at Rubedo is <strong>conditional portfolio optimization</strong>
+          in the most literal sense: expected returns, covariances, constraints,
+          and even the utility functional are functions of regime state. The
+          optimization surface is not fixed — it reshapes as regimes cycle.
+          <br><br>
+          No single efficient frontier. A <em>manifold of frontiers indexed by
+          regime</em>, with per-regime parameters estimated through hierarchical
+          Bayesian methods — unconditional priors shrinking rarely-observed
+          regimes toward the global posterior while preserving regime-specific
+          structure where data is abundant.
+          <br><br>
+          The solution is not an allocation vector but an <strong>allocation
+          policy</strong> — a mapping from regime state to positions across a
+          tractable macro universe spanning equity indices, rates, credit,
+          currencies, commodities, and volatility.
+          <br><br>
+          Macro's skew signature is intentionally non-stationary: negatively
+          skewed in carry regimes, positively skewed in safe-haven regimes,
+          symmetric in transitions. This flexibility is the feature — Macro
+          is the strategy whose distributional shape is most directly shaped
+          by the prevailing environment.
+          <div class="tech-aside">
+            Macro does not consume <span class="phi-ref">Φ</span>. The macro
+            universe (20–50 instruments) is too small for per-instrument
+            four-moment distributional forecasting to be the right tool; the
+            marginal benefit is dominated by getting regime conditioning
+            correct. Macro's tight coupling to the regime-encoding layer
+            makes it the strategy most sensitive to regime-representation
+            quality.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── Convergence to Tail Risk Parity ─── -->
+    <div class="converge-spread anim-10">
+      <svg viewBox="0 0 950 36" preserveAspectRatio="none">
+        <!-- Four strategy columns converging to center -->
+        <line x1="118" y1="0" x2="118" y2="12" stroke="rgba(139,26,26,0.4)" stroke-width="1"/>
+        <line x1="356" y1="0" x2="356" y2="12" stroke="rgba(139,26,26,0.4)" stroke-width="1"/>
+        <line x1="594" y1="0" x2="594" y2="12" stroke="rgba(139,26,26,0.4)" stroke-width="1"/>
+        <line x1="832" y1="0" x2="832" y2="12" stroke="rgba(139,26,26,0.4)" stroke-width="1"/>
+        <line x1="118" y1="12" x2="832" y2="12" stroke="rgba(139,26,26,0.4)" stroke-width="1"/>
+        <line x1="475" y1="12" x2="475" y2="36" stroke="rgba(139,26,26,0.4)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- ─── Tail Risk Parity Terminal ───────── -->
+    <div class="node trp anim-11" onclick="toggleNode(this)">
+      <div class="magic-word">◆ Tail Risk Parity ◆</div>
+      <div class="incantation">Stochastic programming under tail-weighted utility</div>
+      <div class="expand-hint">[ tap to reveal ]</div>
+      <div class="expansion">
+        Four strategies with four distinct skew signatures do not combine by
+        equal-risk-contribution, nor by mean-variance, nor by any method that
+        treats the body of the distribution as privileged. They combine
+        through <strong>Tail Risk Parity</strong>.
+        <br><br>
+        The principle: risk should be allocated not by its contribution to
+        variance but by its contribution to <em>disutility in the tail</em> —
+        in the exceptional events, the regime transitions, the moments when
+        the book's distribution is most informative about the fund's
+        robustness.
+        <br><br>
+        Scenarios are generated over the joint distribution of strategy
+        returns, assembled from strategy-level marginals and a book-level
+        copula with explicit <strong>tail dependence</strong> — capturing
+        the degree to which strategy drawdowns cluster in crisis regimes.
+        Gaussian dependence is inadequate; Student-t and skewed-t copulas
+        with regime-conditional parameters are the working framework.
+        <br><br>
+        Allocations across the four strategies are set under a
+        <strong>stochastic programming formulation with tail-emphasizing
+        utility</strong>, such that marginal contributions to tail
+        disutility are balanced. The four-strategy lineup is intentionally
+        constructed for skew diversity — Factor's symmetry, Stat Arb's
+        negative skew, Trend Following's positive skew, Macro's
+        regime-dependent asymmetry — so that the book's skew profile
+        becomes <em>shapable</em> by allocation rather than determined by
+        any single strategy.
+        <br><br>
+        This is the final transmutation: four strategies with different
+        tail signatures, aggregated under an objective that prices the
+        tail explicitly, producing a book whose resilience is engineered
+        at the distributional level.
+        <div class="tech-aside">
+          Classical risk parity equalizes marginal volatility contributions
+          (Maillard et al. 2010). Tail Risk Parity generalizes this to
+          equalize marginal contributions to a tail-focused utility
+          functional — prudence/temperance-weighted utility, rank-dependent
+          utility with probability weighting that emphasizes tail
+          probabilities, or a custom functional with explicit tail-body
+          asymmetry. The choice is kept open; the structure ensures the
+          remaining decisions are well-posed.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span><span class="solid"></span> strategy hierarchy</span>
+    <span><span class="dash"></span> PAI conditioning</span>
+    <span><span class="crimson-line"></span> book-level aggregation</span>
+    <br>
+    <span><span class="phi-inline">Φ</span> solid: primary consumer &nbsp;·&nbsp; dashed: selective integration</span>
+  </div>
+
+</div>
+
+<script>
+function toggleNode(el) {
+  el.classList.toggle('expanded');
+}
+</script>
+
+</body>
+</html>
